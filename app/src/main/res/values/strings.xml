@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CryptoKey</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="logoContentDescription">Logo</string>
 </resources>
