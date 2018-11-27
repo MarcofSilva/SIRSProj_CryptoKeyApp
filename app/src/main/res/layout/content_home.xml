@@ -8,4 +8,37 @@
     tools:context=".HomeActivity"
     tools:showIn="@layout/activity_home">
 
+    <TextView
+        android:id="@+id/TitlePassword_txtView"
+        android:layout_width="257dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="50dp"
+        android:fontFamily="monospace"
+        android:text="Password"
+        android:textAlignment="center"
+        android:textAllCaps="true"
+        android:textColor="@color/zxing_result_view"
+        android:textSize="35sp"
+        android:textStyle="bold|italic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/otp_txtView"
+        android:layout_width="354dp"
+        android:layout_height="85dp"
+        android:layout_marginTop="60dp"
+        android:fontFamily="sans-serif"
+        android:text="........."
+        android:textAlignment="center"
+        android:textAllCaps="false"
+        android:textColor="@android:color/black"
+        android:textSize="50sp"
+        android:textStyle="bold|italic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/TitlePassword_txtView" />
 </android.support.constraint.ConstraintLayout>

@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity {
-    private static int SPLASH_TIME_OUT = 2000; //miliseconds of duration of launcher Activity
+    private static int SPLASH_TIME_OUT = 1000; //miliseconds of duration of launcher Activity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
