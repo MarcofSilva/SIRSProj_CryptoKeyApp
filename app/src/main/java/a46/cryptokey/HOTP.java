@@ -5,31 +5,34 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 //RFC4226
 class HOTP {
 
-    private static final String MAC_ALGORITHM = "HmacSHA1"; //HmacSHA1 returns a 160bit (20bytes) message digest
+    private KeyManager _keyManager;
     private String _secretKey;
+    private static final String MAC_ALGORITHM = "HmacSHA1"; //HmacSHA1 returns a 160bit (20bytes) message digest
     private int _numberDigitsOTP;
 
     public HOTP(String secretKey, int numberDigitsOTP) {
-        _secretKey = secretKey;
         _numberDigitsOTP = numberDigitsOTP;
+        _keyManager = new KeyManager();
+        _secretKey = secretKey;
     }
 
-    public void set_secretKey(String _secretKey) {
-        this._secretKey = _secretKey;
+    public void set_secretKey(String secretKey) {
+        _secretKey = secretKey;
     }
 
     protected String generateOTP(long counter) {
         if (_secretKey == null) {
-            return null; //The UI activity will interpret this as no key was already created
+            return ""; //The UI activity will interpret this as no key was already created
         }
 
         //TODO transformation of key and counter for byte array
-        byte[] key = hexStringToBytes(_secretKey); //TODO ter em atencao a conversao
+        byte[] key = _keyManager.hexStringToBytes(_secretKey); //TODO ter em atencao a
         byte[] counterByte = ByteBuffer.allocate(8).putLong(counter).array(); //Long to byte array
 
         byte[] hmacHash = hmacHash(key, counterByte);
@@ -52,27 +55,18 @@ class HOTP {
         return finalOTP;
     }
 
-    public byte[] hexStringToBytes(String hexInputString){
-
-        byte[] byteArray = new byte[hexInputString.length() / 2];
-        for (int i = 0; i < byteArray.length; i++) {
-            byteArray[i] = (byte) Integer.parseInt(hexInputString.substring(2*i, 2*i+2), 16);
-        }
-        return byteArray;
-    }
-
     private byte[] hmacHash(byte[] secret, byte[] counter) {
         byte[] digest = null;
 
-        Mac hmac_sha1 = null;
+        Mac mac;
         try {
-            hmac_sha1 = Mac.getInstance(MAC_ALGORITHM);
+            mac = Mac.getInstance(MAC_ALGORITHM);
 
-            SecretKeySpec secretKeySpec = new SecretKeySpec(secret, "RAW");
+            SecretKey secretKey = new SecretKeySpec(secret, MAC_ALGORITHM);
 
-            hmac_sha1.init(secretKeySpec);
+            mac.init(secretKey);
 
-            digest = hmac_sha1.doFinal(counter);
+            digest = mac.doFinal(counter);
 
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();

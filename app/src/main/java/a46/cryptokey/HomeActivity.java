@@ -26,8 +26,9 @@ public class HomeActivity extends AppCompatActivity {
     private static final String SECRET_KEY_FILENAME = "SecretKey";
 
     private static final int NUMBER_OF_DIGITS_IN_OTP = 6; //n belongs to [0, 9] (One time password size)
-    private static final int TIME_RANGE_PASSWORD = 5; //For how long is a one time password valid until a new gets
+    private static final int TIME_RANGE_PASSWORD = 30; //For how long is a one time password valid until a new gets
 
+    private KeyManager keyManager;
     private TOTP totp;
     private Thread otpUpdaterThread;
     private TextView otpTextView;
@@ -41,7 +42,8 @@ public class HomeActivity extends AppCompatActivity {
         /*Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);*/
 
-        totp = new TOTP(readFile(SECRET_KEY_FILENAME), NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
+        keyManager = new KeyManager();
+        totp = new TOTP(readSecretKey(SECRET_KEY_FILENAME), NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
         otpTextView = findViewById(R.id.otp_txtView);
 
         //TODO se houver tempo ver melhor a espera por novo codigo
@@ -52,18 +54,18 @@ public class HomeActivity extends AppCompatActivity {
                 String old_otp = "";
                 String new_otp;
                 while(isAlive()) {
-                    if(!(new_otp = totp.generateOTP()).equals(old_otp)) {
-                        final String temp_new_otp = new_otp;
+                    if((new_otp = totp.generateOTP()) != old_otp) {
+                        final String finalNew_otp = new_otp;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                otpTextView.setText(temp_new_otp);
+                                otpTextView.setText(finalNew_otp);
                             }
                         });
                         old_otp = new_otp;
                     }
                     try {
-                        Thread.sleep(500); //waits 1/2 sec between every check for new one time password
+                        Thread.sleep(TIME_RANGE_PASSWORD / 2);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         //TODO deal with exception in the best way
@@ -169,7 +171,7 @@ public class HomeActivity extends AppCompatActivity {
         totp.set_secretKey(secret);
     }
 
-    private String readFile(String filename) {
+    private String readSecretKey(String filename) {
         String secretKey_string = null;
 
         try {

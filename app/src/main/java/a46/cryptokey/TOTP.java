@@ -11,8 +11,12 @@ public class TOTP extends HOTP{
     }
 
     public String generateOTP() {
-        long unixTime = System.currentTimeMillis()/1000L;
-        long counter = unixTime / _timeRangeOfPassword;
+        long counter = getUnixTimeCounter();
         return super.generateOTP(counter);
+    }
+
+    public long getUnixTimeCounter() {
+        long unixTime = System.currentTimeMillis()/1000L;
+        return unixTime / _timeRangeOfPassword;
     }
 }
