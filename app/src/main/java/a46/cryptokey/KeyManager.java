@@ -1,8 +1,43 @@
 package a46.cryptokey;
 
+import android.content.Context;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
 public class KeyManager {
 
-    public KeyManager() {
+    private String _secretKey;
+
+    private static class SingletonHolder {
+        private static final KeyManager instance = new KeyManager();
+    }
+
+    private KeyManager() {
+        _secretKey = null;
+    }
+
+    public static synchronized KeyManager getInstance() {
+        return SingletonHolder.instance;
+    }
+
+    public void setSecretKey(String secretKey) {
+        _secretKey = secretKey;
+    }
+
+    public SecretKey getSecretKey(String algorithm) {
+        if(_secretKey == null) {
+            return null;
+        }
+        byte[] secretKey = hexStringToBytes(_secretKey);
+        return new SecretKeySpec(secretKey, algorithm);
     }
 
         //Base64 Encoder and Decoder don't work for Android with API < 26 and the android smartphone with the lowest API version has API 23

@@ -26,7 +26,7 @@ public class HomeActivity extends AppCompatActivity {
     private static final String SECRET_KEY_FILENAME = "SecretKey";
 
     private static final int NUMBER_OF_DIGITS_IN_OTP = 6; //n belongs to [0, 9] (One time password size)
-    private static final int TIME_RANGE_PASSWORD = 30; //For how long is a one time password valid until a new gets
+    private static final int TIME_RANGE_PASSWORD = 5; //For how long is a one time password valid until a new gets
 
     private KeyManager keyManager;
     private TOTP totp;
@@ -42,8 +42,9 @@ public class HomeActivity extends AppCompatActivity {
         /*Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);*/
 
-        keyManager = new KeyManager();
-        totp = new TOTP(readSecretKey(SECRET_KEY_FILENAME), NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
+        keyManager = KeyManager.getInstance();
+        keyManager.setSecretKey(readSecretKey());
+        totp = new TOTP(NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
         otpTextView = findViewById(R.id.otp_txtView);
 
         //TODO se houver tempo ver melhor a espera por novo codigo
@@ -116,7 +117,8 @@ public class HomeActivity extends AppCompatActivity {
         if(scanResult != null) {
             String secretKey = scanResult.getContents();
             if(secretKey != null && !secretKey.equals("")) {
-                StoreSecretKey(SECRET_KEY_FILENAME, secretKey);
+                StoreSecretKey(secretKey);
+                Toast.makeText(HomeActivity.this,"New SecretKey stored", Toast.LENGTH_SHORT).show();
                 Toast.makeText(this, secretKey, Toast.LENGTH_LONG).show();
             }
         }
@@ -136,7 +138,8 @@ public class HomeActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         //TODO check input before just accepting it
                         String secretKey = input.getText().toString();
-                        StoreSecretKey(SECRET_KEY_FILENAME, secretKey);
+                        StoreSecretKey(secretKey);
+                        Toast.makeText(HomeActivity.this,"New SecretKey stored", Toast.LENGTH_SHORT).show();
                         Toast.makeText(HomeActivity.this, secretKey, Toast.LENGTH_LONG).show();
 
                         }
@@ -153,13 +156,11 @@ public class HomeActivity extends AppCompatActivity {
     }
 
 
-    private void StoreSecretKey(String filename, String secret) {
+    public void StoreSecretKey(String secret) {
         try {
-            FileOutputStream fileOutputStream = openFileOutput(filename, Context.MODE_PRIVATE); //MODE_PRIVATE make file private to the app
+            FileOutputStream fileOutputStream = openFileOutput(SECRET_KEY_FILENAME, Context.MODE_PRIVATE); //MODE_PRIVATE make file private to the app
             fileOutputStream.write(secret.getBytes());
             fileOutputStream.close();
-
-            Toast.makeText(HomeActivity.this,"New SecretKey stored", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             //TODO Deal with exception in a proper way
@@ -167,15 +168,15 @@ public class HomeActivity extends AppCompatActivity {
             e.printStackTrace();
             //TODO Deal with exception in a proper way
         }
-        //Update secretKey in TOTP generator
-        totp.set_secretKey(secret);
+        //Update secretKey
+        keyManager.setSecretKey(secret);
     }
 
-    private String readSecretKey(String filename) {
+    private String readSecretKey() {
         String secretKey_string = null;
 
         try {
-            FileInputStream fileInputStream = openFileInput(filename);
+            FileInputStream fileInputStream = openFileInput(SECRET_KEY_FILENAME);
             InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
             BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
@@ -191,5 +192,4 @@ public class HomeActivity extends AppCompatActivity {
 
         return secretKey_string;
     }
-
 }

@@ -5,8 +5,8 @@ public class TOTP extends HOTP{
 
     private int _timeRangeOfPassword; //One time password update every TIME_RANGE_PASSWORD seconds
 
-    public TOTP(String secretKey, int numberDigitsOTP, int timeRangeOfPassword) {
-        super(secretKey, numberDigitsOTP);
+    public TOTP(int numberDigitsOTP, int timeRangeOfPassword) {
+        super(numberDigitsOTP);
         _timeRangeOfPassword = timeRangeOfPassword;
     }
 
