@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,18 +21,23 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Date;
 
 public class HomeActivity extends AppCompatActivity {
 
     private static final String SECRET_KEY_FILENAME = "SecretKey";
 
+    //These two must be in sync with the ones in the pc app
     private static final int NUMBER_OF_DIGITS_IN_OTP = 6; //n belongs to [0, 9] (One time password size)
-    private static final int TIME_RANGE_PASSWORD = 5; //For how long is a one time password valid until a new gets
+    private static final int TIME_RANGE_PASSWORD = 20; //For how long is a one time password valid until a new gets
 
+    private EncryptionKeyHolder bluetoothConnectionHandler;
     private KeyManager keyManager;
     private TOTP totp;
+
     private Thread otpUpdaterThread;
     private TextView otpTextView;
+    private ProgressBar totpProgressBar;
 
 
     @Override
@@ -46,8 +52,8 @@ public class HomeActivity extends AppCompatActivity {
         keyManager.setSecretKey(readSecretKey());
         totp = new TOTP(NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
         otpTextView = findViewById(R.id.otp_txtView);
+        totpProgressBar = findViewById(R.id.totp_progressBar);
 
-        //TODO se houver tempo ver melhor a espera por novo codigo
         //Thread that keep on calculating the otp and update the corresponding text view when it changes
         otpUpdaterThread = new Thread() {
             @Override
@@ -55,12 +61,14 @@ public class HomeActivity extends AppCompatActivity {
                 String old_otp = "";
                 String new_otp;
                 while(isAlive()) {
+
                     if((new_otp = totp.generateOTP()) != old_otp) {
                         final String finalNew_otp = new_otp;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 otpTextView.setText(finalNew_otp);
+                                updateTOTPProgressBar();
                             }
                         });
                         old_otp = new_otp;
@@ -75,8 +83,14 @@ public class HomeActivity extends AppCompatActivity {
                 }
             }
         };
-
         otpUpdaterThread.start();
+
+        bluetoothConnectionHandler = new EncryptionKeyHolder(this);
+        if(bluetoothConnectionHandler.getBluetoothAdapter() != null)
+            bluetoothConnectionHandler.start();
+        else
+            Toast.makeText(this, "This device don't support bluetooth", Toast.LENGTH_LONG).show();
+
     }
 
 
@@ -118,6 +132,7 @@ public class HomeActivity extends AppCompatActivity {
             String secretKey = scanResult.getContents();
             if(secretKey != null && !secretKey.equals("")) {
                 StoreSecretKey(secretKey);
+                updateTOTPOnScreen();
                 Toast.makeText(HomeActivity.this,"New SecretKey stored", Toast.LENGTH_SHORT).show();
                 Toast.makeText(this, secretKey, Toast.LENGTH_LONG).show();
             }
@@ -139,6 +154,7 @@ public class HomeActivity extends AppCompatActivity {
                         //TODO check input before just accepting it
                         String secretKey = input.getText().toString();
                         StoreSecretKey(secretKey);
+                        updateTOTPOnScreen();
                         Toast.makeText(HomeActivity.this,"New SecretKey stored", Toast.LENGTH_SHORT).show();
                         Toast.makeText(HomeActivity.this, secretKey, Toast.LENGTH_LONG).show();
 
@@ -154,7 +170,6 @@ public class HomeActivity extends AppCompatActivity {
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
     }
-
 
     public void StoreSecretKey(String secret) {
         try {
@@ -191,5 +206,23 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         return secretKey_string;
+    }
+
+    private void updateTOTPOnScreen() {
+        otpTextView.setText(totp.generateOTP());
+        updateTOTPProgressBar();
+    }
+
+    private void updateTOTPProgressBar() {
+        totpProgressBar.setVisibility(View.VISIBLE);
+
+        Date dt = new Date();
+        float curSec = (float)dt.getSeconds();
+        int progress;
+        if(curSec > TIME_RANGE_PASSWORD)
+            curSec = curSec % TIME_RANGE_PASSWORD;
+        progress = (int)(100 - ((curSec/TIME_RANGE_PASSWORD)*100));
+
+        totpProgressBar.setProgress(progress);
     }
 }

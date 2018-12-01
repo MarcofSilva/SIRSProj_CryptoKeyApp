@@ -1,14 +1,5 @@
 package a46.cryptokey;
 
-import android.content.Context;
-
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -40,7 +31,7 @@ public class KeyManager {
         return new SecretKeySpec(secretKey, algorithm);
     }
 
-        //Base64 Encoder and Decoder don't work for Android with API < 26 and the android smartphone with the lowest API version has API 23
+    //Base64 Encoder and Decoder don't work for Android with API < 26 and the android used for testing with the lowest API version has API 23
     //As so the hexStringToBytes and byteArrayToHexString help us to convert byte arrays to strings and vice versa
     public byte[] hexStringToBytes(String hexInputString){
 
