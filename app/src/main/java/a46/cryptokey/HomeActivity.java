@@ -1,12 +1,21 @@
 package a46.cryptokey;
 
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -22,6 +31,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
+import java.util.Set;
+import java.util.UUID;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -31,7 +42,9 @@ public class HomeActivity extends AppCompatActivity {
     private static final int NUMBER_OF_DIGITS_IN_OTP = 6; //n belongs to [0, 9] (One time password size)
     private static final int TIME_RANGE_PASSWORD = 20; //For how long is a one time password valid until a new gets
 
-    private EncryptionKeyHolder bluetoothConnectionHandler;
+    private BroadcastReceiver mReceiver = null;
+    private BluetoothAdapter mBluetoothAdapter;
+    private BluetoothClientManager mbluetoothCommunicationManager;
     private KeyManager keyManager;
     private TOTP totp;
 
@@ -85,14 +98,88 @@ public class HomeActivity extends AppCompatActivity {
         };
         otpUpdaterThread.start();
 
-        bluetoothConnectionHandler = new EncryptionKeyHolder(this);
-        if(bluetoothConnectionHandler.getBluetoothAdapter() != null)
-            bluetoothConnectionHandler.start();
-        else
-            Toast.makeText(this, "This device don't support bluetooth", Toast.LENGTH_LONG).show();
 
+        //Bluetooth
+        mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String action = intent.getAction();
+
+                if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                    final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                            BluetoothAdapter.ERROR);
+                    switch (state) {
+                        case BluetoothAdapter.STATE_OFF:
+                            Toast.makeText(HomeActivity.this,"Bluetooth off", Toast.LENGTH_SHORT).show();
+                            break;
+                        case BluetoothAdapter.STATE_TURNING_OFF:
+                            Toast.makeText(HomeActivity.this,"Turning Bluetooth off...", Toast.LENGTH_SHORT).show();
+                            mbluetoothCommunicationManager.cancel();
+                            mbluetoothCommunicationManager.interrupt();
+                            mbluetoothCommunicationManager.setDevice(null);
+                            mbluetoothCommunicationManager.resetSocket();
+                            break;
+                        case BluetoothAdapter.STATE_ON:
+                            Toast.makeText(HomeActivity.this,"Bluetooth on", Toast.LENGTH_SHORT).show();
+                            BluetoothDevice bluetoothDevice = getPairedDevice();
+                            if(bluetoothDevice != null) {
+                                mbluetoothCommunicationManager.setDevice(bluetoothDevice);
+                                mbluetoothCommunicationManager.createSocket();
+                                mbluetoothCommunicationManager = new BluetoothClientManager(mBluetoothAdapter, bluetoothDevice);
+                                mbluetoothCommunicationManager.start();
+                            }
+                            break;
+                        case BluetoothAdapter.STATE_TURNING_ON:
+                            Toast.makeText(HomeActivity.this,"Turning Bluetooth on...", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                }
+            }
+        };
+
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, "This device don't support bluetooth", Toast.LENGTH_LONG).show();
+        }
+        else {
+            if (!mBluetoothAdapter.isEnabled()) {
+                mBluetoothAdapter.enable();
+                //Make it wait for a moment, to give time for the bluetooth to turn on
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    //ignore
+                }
+            }
+
+            BluetoothDevice bluetoothDevice = getPairedDevice();
+            if(bluetoothDevice != null) {
+                //Prepare and start thread that manage the bluetooth communications
+
+                mbluetoothCommunicationManager = new BluetoothClientManager(mBluetoothAdapter, bluetoothDevice);
+                mbluetoothCommunicationManager.start();
+
+                // Register for broadcasts on BluetoothAdapter state change
+                IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+                registerReceiver(mReceiver, filter);
+            }
+        }
     }
 
+    private BluetoothDevice getPairedDevice() {
+        BluetoothDevice bluetoothDevice = null;
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+        // If there are paired devices
+        if (pairedDevices.size() == 1) {
+            for(BluetoothDevice device : pairedDevices) {
+                bluetoothDevice = device;
+            }
+        }
+        else {
+            Toast.makeText(HomeActivity.this,"Make sure to have the system pc (and only the pc) paired with this device and restart the app", Toast.LENGTH_LONG).show();
+        }
+        return bluetoothDevice;
+    }
 
 
     @Override
@@ -113,6 +200,14 @@ public class HomeActivity extends AppCompatActivity {
                 });
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    @Override
+    public void onDestroy() {
+        // Unregister broadcast listeners
+        unregisterReceiver(mReceiver);
+        mbluetoothCommunicationManager.cancel();
+        super.onDestroy();
     }
 
 
