@@ -10,17 +10,17 @@ import javax.crypto.SecretKey;
 //RFC4226
 class HOTP {
 
-    private KeyManager _keyManager;
+    private SecurityManager _securityManager;
     private static final String MAC_ALGORITHM = "HmacSHA1"; //HmacSHA1 returns a 160bit (20bytes) message digest
     private int _numberDigitsOTP;
 
     public HOTP(int numberDigitsOTP) {
         _numberDigitsOTP = numberDigitsOTP;
-        _keyManager = KeyManager.getInstance();
+        _securityManager = SecurityManager.getInstance();
     }
 
     protected String generateOTP(long counter) {
-        SecretKey secretKey = _keyManager.getSecretKey(MAC_ALGORITHM);
+        SecretKey secretKey = _securityManager.getSecretKey(MAC_ALGORITHM);
         if (secretKey == null) {
             return ""; //The UI activity will interpret this as no key was already created
         }

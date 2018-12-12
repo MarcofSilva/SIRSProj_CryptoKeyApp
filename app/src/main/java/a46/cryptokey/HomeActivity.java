@@ -2,20 +2,14 @@ package a46.cryptokey;
 
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -31,8 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
-import java.util.Set;
-import java.util.UUID;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -44,8 +36,8 @@ public class HomeActivity extends AppCompatActivity {
 
     private BroadcastReceiver mReceiver = null;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothClientManager mbluetoothCommunicationManager;
-    private KeyManager keyManager;
+    private BluetoothCommunicationManager mbluetoothCommunicationManager;
+    private SecurityManager securityManager;
     private TOTP totp;
 
     private Thread otpUpdaterThread;
@@ -61,8 +53,8 @@ public class HomeActivity extends AppCompatActivity {
         /*Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);*/
 
-        keyManager = KeyManager.getInstance();
-        keyManager.setSecretKey(readSecretKey());
+        securityManager = SecurityManager.getInstance();
+        //securityManager.setSecretKey(readSecretKey()); TODO parado de escrever num ficheiro ver funcao de store
         totp = new TOTP(NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
         otpTextView = findViewById(R.id.otp_txtView);
         totpProgressBar = findViewById(R.id.totp_progressBar);
@@ -98,7 +90,6 @@ public class HomeActivity extends AppCompatActivity {
         };
         otpUpdaterThread.start();
 
-
         //Bluetooth
         mReceiver = new BroadcastReceiver() {
             @Override
@@ -110,24 +101,17 @@ public class HomeActivity extends AppCompatActivity {
                             BluetoothAdapter.ERROR);
                     switch (state) {
                         case BluetoothAdapter.STATE_OFF:
+                            mbluetoothCommunicationManager.interrupt();
                             Toast.makeText(HomeActivity.this,"Bluetooth off", Toast.LENGTH_SHORT).show();
                             break;
                         case BluetoothAdapter.STATE_TURNING_OFF:
                             Toast.makeText(HomeActivity.this,"Turning Bluetooth off...", Toast.LENGTH_SHORT).show();
-                            mbluetoothCommunicationManager.cancel();
-                            mbluetoothCommunicationManager.interrupt();
-                            mbluetoothCommunicationManager.setDevice(null);
-                            mbluetoothCommunicationManager.resetSocket();
                             break;
                         case BluetoothAdapter.STATE_ON:
+                            //Start thread that manage the bluetooth communications
+                            mbluetoothCommunicationManager = new BluetoothCommunicationManager(mBluetoothAdapter);
+                            mbluetoothCommunicationManager.start();
                             Toast.makeText(HomeActivity.this,"Bluetooth on", Toast.LENGTH_SHORT).show();
-                            BluetoothDevice bluetoothDevice = getPairedDevice();
-                            if(bluetoothDevice != null) {
-                                mbluetoothCommunicationManager.setDevice(bluetoothDevice);
-                                mbluetoothCommunicationManager.createSocket();
-                                mbluetoothCommunicationManager = new BluetoothClientManager(mBluetoothAdapter, bluetoothDevice);
-                                mbluetoothCommunicationManager.start();
-                            }
                             break;
                         case BluetoothAdapter.STATE_TURNING_ON:
                             Toast.makeText(HomeActivity.this,"Turning Bluetooth on...", Toast.LENGTH_SHORT).show();
@@ -146,39 +130,20 @@ public class HomeActivity extends AppCompatActivity {
                 mBluetoothAdapter.enable();
                 //Make it wait for a moment, to give time for the bluetooth to turn on
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(2500);
                 } catch (InterruptedException e) {
-                    //ignore
+                    e.printStackTrace();
                 }
             }
 
-            BluetoothDevice bluetoothDevice = getPairedDevice();
-            if(bluetoothDevice != null) {
-                //Prepare and start thread that manage the bluetooth communications
+            //Prepare thread that manage the bluetooth communications
+            mbluetoothCommunicationManager = new BluetoothCommunicationManager(mBluetoothAdapter);
+            mbluetoothCommunicationManager.start();
 
-                mbluetoothCommunicationManager = new BluetoothClientManager(mBluetoothAdapter, bluetoothDevice);
-                mbluetoothCommunicationManager.start();
-
-                // Register for broadcasts on BluetoothAdapter state change
-                IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-                registerReceiver(mReceiver, filter);
-            }
+            // Register for broadcasts on BluetoothAdapter state change TODO
+            IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+            registerReceiver(mReceiver, filter);
         }
-    }
-
-    private BluetoothDevice getPairedDevice() {
-        BluetoothDevice bluetoothDevice = null;
-        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-        // If there are paired devices
-        if (pairedDevices.size() == 1) {
-            for(BluetoothDevice device : pairedDevices) {
-                bluetoothDevice = device;
-            }
-        }
-        else {
-            Toast.makeText(HomeActivity.this,"Make sure to have the system pc (and only the pc) paired with this device and restart the app", Toast.LENGTH_LONG).show();
-        }
-        return bluetoothDevice;
     }
 
 
@@ -267,7 +232,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     public void StoreSecretKey(String secret) {
-        try {
+        /*try {TODO parado de escrever num ficheiro ver chamada a funcao de read
             FileOutputStream fileOutputStream = openFileOutput(SECRET_KEY_FILENAME, Context.MODE_PRIVATE); //MODE_PRIVATE make file private to the app
             fileOutputStream.write(secret.getBytes());
             fileOutputStream.close();
@@ -277,9 +242,9 @@ public class HomeActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
             //TODO Deal with exception in a proper way
-        }
+        }*/
         //Update secretKey
-        keyManager.setSecretKey(secret);
+        securityManager.setSecretKey(secret);
     }
 
     private String readSecretKey() {
