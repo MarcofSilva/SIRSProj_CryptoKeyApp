@@ -134,17 +134,12 @@ public class SecurityManager {
         //Apply the security procedures
         //TODO
 
-        //Encrypt the MAC TODO ver a questao de gerar chaves independentes para encriptacao e para mac
+        //Encrypt the MAC
         Log.d("PC_Message", "sessionnumber: " + sessionNumber);
         byte[] content = authHandler.addTimestampAndSessionNumber(msg, sessionNumber);
-        /*byte[] IVandEncryptedMsg = encrypt(content, getSecretKey("AES")); //TODO the key need to be reviewed
-        byte[] mac = macHandler.addMAC(IVandEncryptedMsg, getSecretKey(MAC_ALGORITHM));
-        //Concatenate encrypted message and mac of message
-        byte[] secureMsg = new byte[IVandEncryptedMsg.length + mac.length];
-        System.arraycopy(IVandEncryptedMsg, 0, secureMsg, 0, IVandEncryptedMsg.length);
-        System.arraycopy(mac, 0, secureMsg, IVandEncryptedMsg.length, mac.length);
-        return secureMsg;*/
-        return content;
+        byte[] IVandEncryptedMsg = encrypt(content, getSecretKey("AES"));
+        byte[] secureMsg = macHandler.addMAC(IVandEncryptedMsg, getSecretKey(MAC_ALGORITHM));
+        return secureMsg;
     }
 
     //Returns true if message is valid and false otherwise
@@ -152,17 +147,16 @@ public class SecurityManager {
         byte[] IVandEncrypted;
         byte[] decrypted;
         byte[] msg;
-        //if((IVandEncrypted = macHandler.validateMAC(input, getSecretKey(MAC_ALGORITHM))) != null) {
-        //    if((decrypted = decrypt(IVandEncrypted, getSecretKey("AES"))) != null) { //TODO the key need to be reviewed
-                if((msg = authHandler.validateTimestampAndSessionNumber(input, ++sessionNumber)) != null) { //Incremented the session number TODO input e decrypted
+        if((IVandEncrypted = macHandler.validateMAC(input, getSecretKey(MAC_ALGORITHM))) != null) {
+            if((decrypted = decrypt(IVandEncrypted, getSecretKey("AES"))) != null) {
+                if((msg = authHandler.validateTimestampAndSessionNumber(decrypted, ++sessionNumber)) != null) { //Incremented the session number
                     //All security requirements validated
                     return true;
                 }
-        //    }
-        //}
+            }
+        }
         //Reject message and connection
-        //return false;
-        return false; //TODO isto tem de ser false...so para debug
+        return false;
     }
 
     public byte[] encrypt(byte[] array, SecretKey secretKey) throws Exception {

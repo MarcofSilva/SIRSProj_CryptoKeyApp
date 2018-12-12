@@ -78,6 +78,7 @@ public class BluetoothCommunicationManager extends Thread {
             if(securityManager.validateMessageReceived(received)) {
                 //TODO send the answer
                 byte[] msgToSend = securityManager.prepareMessageToSend();
+                Log.d("PC_Message", "before sending " + securityManager.byteArrayToHexString(msgToSend));
                 outStream.write(msgToSend);
                 Log.d("PC_Message", "msgSent: " + securityManager.byteArrayToHexString(msgToSend));
             }
