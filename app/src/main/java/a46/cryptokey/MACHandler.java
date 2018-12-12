@@ -4,6 +4,8 @@ import android.util.Log;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
+import javax.net.ssl.KeyManager;
+
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -50,10 +52,12 @@ public class MACHandler {
 
         byte[] calculatedMac = getMAC( IVandEncryptedMsg, key );
         if(!Arrays.equals(mac, calculatedMac)) {
-            Log.d("PC_Message", "received = " + mac + " -- calculated = " + calculatedMac);
+            Log.d("PC_Message", "Error, MAC validation failed. Corrupted Message");
+            Log.d("PC_Message", "MAC received = " + SecurityManager.getInstance().byteArrayToHexString(mac) + " -- calculated = " + SecurityManager.getInstance().byteArrayToHexString(calculatedMac));
             return null;
         }
         //return parte inicial da msg sem o mac
+        Log.d("PC_Message", "MAC validated");
         return IVandEncryptedMsg;
     }
 

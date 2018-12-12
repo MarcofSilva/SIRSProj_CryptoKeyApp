@@ -121,7 +121,6 @@ public class SecurityManager {
             byteBuffer.put(privateKeyForDecryptionEncoded);
             byteBuffer.put(publicKeyForEncryptionEncoded);
             msg = byteBuffer.array();
-            Log.d("PC_Message","private key: " + byteArrayToHexString(privateKeyForDecryption.getEncoded()));
         }
         else {
             byteBuffer = ByteBuffer.allocate(8 + publicKeyForEncryptionEncoded.length);
@@ -130,12 +129,10 @@ public class SecurityManager {
             byteBuffer.put(publicKeyForEncryptionEncoded);
             msg = byteBuffer.array();
         }
-        Log.d("PC_Message", "public key: " + byteArrayToHexString(publicKeyForEncryptionEncoded ));
         //Apply the security procedures
         //TODO
 
         //Encrypt the MAC
-        Log.d("PC_Message", "sessionnumber: " + sessionNumber);
         byte[] content = authHandler.addTimestampAndSessionNumber(msg, sessionNumber);
         byte[] IVandEncryptedMsg = encrypt(content, getSecretKey("AES"));
         byte[] secureMsg = macHandler.addMAC(IVandEncryptedMsg, getSecretKey(MAC_ALGORITHM));

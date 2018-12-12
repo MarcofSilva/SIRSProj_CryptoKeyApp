@@ -36,22 +36,21 @@ public class BluetoothCommunicationManager extends Thread {
         while(mSocket == null) {
             // Keep listening until exception occurs or a mSocket is returned
             try {
-                Log.d("PC_Message", "Abrindo ServerSocket");//TODO
+                Log.d("PC_Message", "Abrindo ServerSocket");
                 mSocket = mmServerSocket.accept();
-                Log.d("PC_Message", "Conectou");//TODO
+                Log.d("PC_Message", "Conectou");
             } catch (IOException e) {
                 return;
             }
             // If a connection was accepted
             if (mSocket != null) {
-                // Do work to manage the connection (in a separate thread?) TODO
+                // Do work to manage the connection
                 manageConnectedSocket(mSocket);
                 mSocket = null;
             }
         }
     }
 
-    //TODO sera preciso ir para outra thread?
     private void manageConnectedSocket(BluetoothSocket socket) {
         // Get the input and output streams, using temp objects because
         // member streams are final
@@ -63,24 +62,23 @@ public class BluetoothCommunicationManager extends Thread {
         } catch (IOException e) {
             return;
         }
-        //TODO
+
         byte[] buffer = new byte[2048];  // buffer store for the stream
         int numBytes; // bytes returned from read()
         // Keep listening to the InputStream until an exception occurs
         try {
             // Read from the InputStream
-            numBytes = inStream.read(buffer); //TODO fazer logica tal como no PC app
+            numBytes = inStream.read(buffer);
             byte[] received = new byte[numBytes];
             ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
             byteBuffer.get(received, 0, numBytes);
-            Log.d("PC_Message","received: " +  securityManager.byteArrayToHexString(received)); //TODO
-            //TODO verify input as to know what is being asked and to authenticate and validate the integrity of the input
+            Log.d("PC_Message","Request received: " +  securityManager.byteArrayToHexString(received));
+            //Verify input to authenticate and validate the integrity of the input
             if(securityManager.validateMessageReceived(received)) {
-                //TODO send the answer
+                //send the answer
                 byte[] msgToSend = securityManager.prepareMessageToSend();
-                Log.d("PC_Message", "before sending " + securityManager.byteArrayToHexString(msgToSend));
                 outStream.write(msgToSend);
-                Log.d("PC_Message", "msgSent: " + securityManager.byteArrayToHexString(msgToSend));
+                Log.d("PC_Message", "Response sent: " + securityManager.byteArrayToHexString(msgToSend));
             }
             else {
                 Log.d("PC_Message","Message received not valid!!");

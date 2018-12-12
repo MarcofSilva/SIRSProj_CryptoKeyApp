@@ -36,7 +36,8 @@ public class AuthorizationHandler {
 
         //intervalo de 1seg pa tras 1 seg pa frente
         if( !(timestamp > currentDate-10000 && timestamp < currentDate+10000)){ //10000 milsecs is a bit to much, but it was necessary because the pc and the android used to testing were not synchronized
-            Log.d("PC_Message", "timestamp = " + timestamp + " -- currentDate = " + currentDate);
+            Log.d("PC_Message", "Error validating timestamps");
+            Log.d("PC_Message", "Timestamp received (ms) = " + timestamp + " -- current tipmestamp (ms)= " + currentDate);
             return null;
         }
         return msg;
@@ -51,7 +52,8 @@ public class AuthorizationHandler {
         long sessionNumber = byteBuffer.getLong();
 
         if(sessionNumber != sessionnr ){
-            Log.d("PC_Message", "receivedSessionNumber = " + sessionNumber + " -- supposedSessionNumber = " + sessionnr);
+            Log.d("PC_Message", "Error validating session number");
+            Log.d("PC_Message", "Received SessionNumber = " + sessionNumber + " -- Current SessionNumber = " + sessionnr);
             return null;
         }
         return msg;

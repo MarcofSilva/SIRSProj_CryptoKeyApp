@@ -49,12 +49,8 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-        //TODO delete
-        /*Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);*/
 
         securityManager = SecurityManager.getInstance();
-        //securityManager.setSecretKey(readSecretKey()); TODO parado de escrever num ficheiro ver funcao de store
         totp = new TOTP(NUMBER_OF_DIGITS_IN_OTP, TIME_RANGE_PASSWORD);
         otpTextView = findViewById(R.id.otp_txtView);
         totpProgressBar = findViewById(R.id.totp_progressBar);
@@ -82,7 +78,6 @@ public class HomeActivity extends AppCompatActivity {
                         Thread.sleep(TIME_RANGE_PASSWORD / 2);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                        //TODO deal with exception in the best way
                     }
 
                 }
@@ -140,7 +135,7 @@ public class HomeActivity extends AppCompatActivity {
             mbluetoothCommunicationManager = new BluetoothCommunicationManager(mBluetoothAdapter);
             mbluetoothCommunicationManager.start();
 
-            // Register for broadcasts on BluetoothAdapter state change TODO
+            // Register for broadcasts on BluetoothAdapter state change
             IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
             registerReceiver(mReceiver, filter);
         }
